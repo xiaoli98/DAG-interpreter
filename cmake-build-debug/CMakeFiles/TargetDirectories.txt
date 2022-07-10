@@ -1,3 +1,0 @@
-/home/boy/SPM/Dag_lib/cmake-build-debug/CMakeFiles/Dag_lib.dir
-/home/boy/SPM/Dag_lib/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/boy/SPM/Dag_lib/cmake-build-debug/CMakeFiles/rebuild_cache.dir
