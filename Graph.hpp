@@ -9,8 +9,9 @@
 #include <vector>
 #include "Node.hpp"
 #include "ThreadPool.hpp"
+#include "Utils.hpp"
 
-#define NWORKER 4
+#define NWORKER 1
 using namespace std;
 
 template<class T>
@@ -24,13 +25,23 @@ private:
 
     mutex mtx_graph;
     Thread_pool *tp;
+
+    size_t sum;
+
+    int count;
 public:
-    Graph() {
-        tp = new Thread_pool(NWORKER);
-    };
+    Graph() : Graph(NWORKER){};
+
+    Graph(int nw){
+        tp = new Thread_pool(nw);
+        tp->start();
+        sum = 0;
+    }
 
     explicit Graph(Thread_pool *threadPool){
         tp = threadPool;
+//        count = 0;
+        tp->start();
     }
 
     void addNode(Node<T> *newNode) {
@@ -50,12 +61,10 @@ public:
     };
 
     void compute(vector<T> value) {
-        //IF PARALLEL STARTS HERE
-        tp->start();
         int i =0;
+
         for (auto it: value) {
             for (Node<T> *n: input_nodes) {
-                if (DEBUG)cout << "input "<< i<<":";
                 n->push_value(it, i, 0);
                 auto wrapper = bind(&Graph<T>::fire, this, n, i);
                 tp->addTask(wrapper);
@@ -63,19 +72,13 @@ public:
             i++;
         }
 
-//        for (Node<T> *n: input_nodes) {
-//            n->push_value(EOS, i, 0);
-//            auto wrapper = bind(&Graph<T>::fire, this, n, i);
-//            tp->addTask(wrapper);
-//        }
-//        i++;
-        //IF SEQUENTIAL STARTS HERE
-//        tp->start();
     };
 
     void fire(Node<T> *node, int i) {
+
         node->doTask(i);
-        unique_lock<mutex> lock_graph(mtx_graph);
+
+//        unique_lock<mutex> lock_graph(mtx_graph);
         for (Node<T> *n: node->getDepNodeList()) {
             if (n->isReady()) {
                 tp->addTask(bind(&Graph<T>::fire, this, n, i));
@@ -83,34 +86,43 @@ public:
         }
     }
 
-    void compile() {
-
+    void compute_sequential(vector<T> value) {
+        int i =0;
+        for (auto it: value) {
+            for (Node<T> *n: input_nodes) {
+                count++;
+                n->push_value(it, i, 0);
+                fire_sequential(n, i);
+            }
+            i++;
+        }
+//        cout << "sum = "<< sum <<" count = "<<count<<endl;
+        cout << "mean comp time = "<<double(sum)/double(count)<<endl;
     };
+
+    void fire_sequential(Node<T> *node, int i){
+        START(time);
+        node->doTask(i);
+//        cout << elapsed<<endl;
+        for (Node<T> *n: node->getDepNodeList()) {
+            if (n->isReady()) {
+                count++;
+                fire_sequential(n, i);
+            }
+        }
+        STOP(time, elapsed);
+        sum += elapsed;
+    }
 
     void terminate() {
         tp->shutdown();
-        cout<< "total task done: "<<tp->getN_done()<<endl;
-        cout << "total task added:" << tp->getN_added()<<endl;
-
-//        for(auto node : input_nodes){
-//            cout <<" $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<endl;
-//            node->printMap(node->getInputMap());
-//            node->printQueue(node->getReadyTokens());
-//        }
-//
-//        for(auto node : middle_nodes){
-//            cout <<" $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<endl;
-//            node->printMap(node->getInputMap());
-//            node->printQueue(node->getReadyTokens());
-//        }
-//
-//        for( auto node: output_nodes){
-//            cout <<" $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<endl;
-//            node->printMap(node->getInputMap());
-//            node->printQueue(node->getReadyTokens());
-//        }
+//        cout<< "total task done: "<<tp->getN_done()<<endl;
+//        cout << "total task added:" << tp->getN_added()<<endl;
     }
-};
 
+//    int getCount(){
+//        return count;
+//    }
+};
 
 #endif //DAG_LIB_GRAPH_HPP

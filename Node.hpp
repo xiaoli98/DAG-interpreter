@@ -17,6 +17,8 @@
 #include <thread>
 #include <vector>
 
+#include "Utils.hpp"
+
 #define IN 0
 #define OUT 1
 #define MIDDLE 2
@@ -32,11 +34,9 @@ struct token {
     vector<T> value;
     int id;
     int counter;
-    bool eos;
 
     token(int id, int c) : id(id), counter(c) {
         value.resize(c);
-        eos = false;
 #if(DEBUG)
         cout<<"constructor:";
         print();
@@ -54,20 +54,12 @@ struct token {
         counter--;
     }
 
-    void setEOS() {
-        eos = true;
-    }
-
     bool isReady() {
         return counter == 0;
     }
 
     T getValue(int pos) {
         return value[pos];
-    }
-
-    bool isEOS() {//TODO no good
-        return eos;
     }
 
     void print() {
@@ -79,13 +71,7 @@ struct token {
         }
         cout << "]" << endl;
     }
-
 };
-
-//template<class T>
-//bool cmp(token<T> a, token<T> b) {
-//    return a.id < b.id;
-//}
 
 template<class T>
 class Node {
@@ -99,18 +85,13 @@ private:
 
     map<int, int> parentToChannel;
     vector<Node<T> *> dep_node_list;
-//    bool *readychannel;
     function<void(void)> f;
-
-//    vector<set<token<T>, decltype(cmp<T>)>> input_setArray;
-//    vector<queue<bool>> readyChannel;
 
     map<int, token<T>> input_map;
     queue<token<T>> readyTokens;
-//    map<int, token<T>> output_map;
+    vector<pair<int,T>> output;
 
     mutex mtx_input_map;
-    mutex mtx_output_map;
     mutex mtx_ready_token;
 
     mutex mtx_fireable;
@@ -124,13 +105,6 @@ public:
         Node::nodeType = type;
         channel_count = 0;
         fireable_token = 0;
-//        mtx_input_map = new mutex[n_in];
-//        readyChannel.resize(n_in);
-//        cv_token_queue = new condition_variable[n_in];
-//        for (int i = 0; i < n_in; i++) {
-//            input_setArray.push_back(set<token<T>, decltype(cmp<T>)>());
-//            readychannel[i] = false;
-//        }
     }
 
     void addDep(Node *child) {
@@ -148,21 +122,6 @@ public:
         f = task;
     }
 
-    /**
-     * a wrapper of the instruction of the node, useful for terminatino check
-     */
-//    void doTask(int id_seq) {
-//        bool isEOS = readyTokens.front().isEOS();
-//#if (DEBUG)
-//        cout << "Node " << getId() << " doTask(): isEOS = " << isEOS << endl;
-//#endif
-//        if (!isEOS) {
-//            f();
-//        }
-//        if (isEOS)
-//            broadcast_termination(id_seq);
-//    }
-
     void doTask(int id_seq) {
         f();
     }
@@ -175,8 +134,8 @@ public:
      */
     void send_out(T value, int channel, int id_seq) {
         if (nodeType == OUT) {
-            if (value == EOS) return;
-            cout << value << endl;
+//            output.emplace_back(id_seq, value);
+//            cout << value <<endl;
             return;
         }
 #if (DEBUG)
@@ -208,14 +167,12 @@ public:
 #endif
             auto newToken = token<T>(id_sequence, n_in);
             newToken.set_value(value, id_channel);
-            if (value == EOS) newToken.setEOS();
             auto temp = input_map.insert(pair<int, token<T>>(id_sequence, newToken));
             it = temp.first;
         } else {
             it->second.set_value(value, id_channel);
         }
         unique_lock ready_lock(mtx_ready_token);
-        //TODO send also task with all channel received EOS
         if (it->second.isReady()) {
             auto tok = it->second;
             input_map.erase(it);
@@ -232,59 +189,19 @@ public:
 #endif
     }
 
-//
-//    /**
-//     * retrieve the input from the input queue
-//     * @param id_channel
-//     * @return input value
-//     */
-//    T pop_value(int id_channel) {
-//        unique_lock<mutex> lock(mtx_input_map[id_channel]);
-//
-//        while (input_setArray[id_channel].empty()) {
-//            cv_token_queue[id_channel].wait(lock);
-//        }
-//
-//        T value = input_setArray[id_channel].front();
-//
-//#if (DEBUG)
-//        cout << "In node " << getId() << " pop_value() form channel " << id_channel << ": " << value << endl;
-//#endif
-//        input_setArray[id_channel].pop();
-//        return value;
-//    }
-
     /**
      * user must call this function inside the task function to bind each input with the queue
      * @param input_list a list of input to be binded
      */
     int binds_inputs(initializer_list<T *> input_list) {
         unique_lock<mutex> lock_token(mtx_ready_token);
-//        int i = 0;
-//        for (auto in: input_list) {
-//            *in = pop_value(i++);
-//        }
-
-        while (readyTokens.empty()) {
-            cv_token_queue.wait(lock_token);
-        }
         auto newToken = readyTokens.front();
         readyTokens.pop();
         int i = 0;
         for (auto in: input_list) {
             *in = newToken.getValue(i++);
         }
-//        input_map.insert(pair(newToken.id, token<T>(newToken.id, n_out)));
         return newToken.id;
-    }
-
-    /**
-     * for the termination, sends to every channel an end of stream value
-     */
-    void broadcast_termination(int id_seq) {
-        for (int i = 0; i < n_out; i++) {
-            send_out(EOS, i, id_seq);
-        }
     }
 
     /**
@@ -300,12 +217,6 @@ public:
         }
         return false;
     }
-//
-//    void fire() {
-//        unique_lock l(mtx_fireable);
-//        fireable_token--;
-//        assert(fireable_token>=0);
-//    }
 
     void ready_to_fire() {
         unique_lock l(mtx_fireable);
@@ -319,7 +230,6 @@ public:
             v.print();
             q.push(q.front());
             q.pop();
-//            cout << "check " << q.front() << " ";
         }
         cout << endl;
     }
@@ -330,28 +240,7 @@ public:
             temp.second.print();
         }
     }
-
 #if (DEBUG)
-
-    void printQueue(queue<token<T>> q) {
-        cout << "readyTokens of Node " << getId() << ":" << endl;
-        for (int j = 0; j < q.size(); j++) {
-            auto v = q.front();
-            v.print();
-            q.push(q.front());
-            q.pop();
-//            cout << "check " << q.front() << " ";
-        }
-        cout << endl;
-    }
-
-    void printMap(map<int ,token<T>> m){
-        cout << "map of Node " <<getId()<<" ";
-        for (auto temp : m){
-            temp.second.print();
-        }
-    }
-
     void debug() {
         cout << "id " << getId() << endl;
         cout << "n_in " << getNIn() << endl;
@@ -359,7 +248,6 @@ public:
         cout << "nodeType " << isOutFlag() << endl;
         cout << "queue size " << int(readyTokens.size()) << endl;
     }
-
 #endif
 
     int getId() const {
@@ -392,6 +280,10 @@ public:
 
     const queue<token<T>> &getReadyTokens() const {
         return readyTokens;
+    }
+
+    const vector<pair<int, T>> &getOutput() const {
+        return output;
     }
 
 };

@@ -1,13 +1,4 @@
 /snap/clion/198/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/snap/clion/198/bin/ninja/linux/ninja -G Ninja -S /home/boy/SPM/Dag_lib -B /home/boy/SPM/Dag_lib/cmake-build-debug
 -- Configuring done
-CMake Error at CMakeLists.txt:8 (add_executable):
-  Cannot find source file:
-
-    mdf.hpp
-
-
-CMake Error at CMakeLists.txt:8 (add_executable):
-  No SOURCES given to target: Dag_lib
-
-
-CMake Generate step failed.  Build files cannot be regenerated correctly.
+-- Generating done
+-- Build files have been written to: /home/boy/SPM/Dag_lib/cmake-build-debug

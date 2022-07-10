@@ -9,6 +9,7 @@
 #include <functional>
 #include <mutex>
 #include <queue>
+#include "Utils.hpp"
 
 using namespace std;
 
@@ -36,13 +37,14 @@ public:
 
     bool pop(function<void()>& t) {
         std::unique_lock<std::mutex> lock(m_mutex);
-
         if (m_queue.empty()) {
             return false;
         }
         t = move(m_queue.front());
 
         m_queue.pop();
+//        STOP(time, elapsed);
+//        cout << elapsed<<endl;
         return true;
     }
 };
