@@ -24,24 +24,24 @@ private:
     vector<Node<T> *> fireAble;
 
     mutex mtx_graph;
-    Thread_pool *tp;
+    Thread_pool *tp{};
 
-    size_t sum;
+//    size_t sum;
 
-    int count;
+//    int count;
 public:
-    Graph() : Graph(NWORKER){};
+    Graph() : Graph(NWORKER, true){};
 
-    Graph(int nw){
+    Graph(int nw, bool flag){
         tp = new Thread_pool(nw);
-        tp->start();
-        sum = 0;
+        if(flag) tp->start();
+//        sum = 0;
     }
 
-    explicit Graph(Thread_pool *threadPool){
+    explicit Graph(Thread_pool *threadPool, bool flag){
         tp = threadPool;
 //        count = 0;
-        tp->start();
+        if (flag) tp->start();
     }
 
     void addNode(Node<T> *newNode) {
@@ -90,28 +90,32 @@ public:
         int i =0;
         for (auto it: value) {
             for (Node<T> *n: input_nodes) {
-                count++;
+//                count++;
                 n->push_value(it, i, 0);
                 fire_sequential(n, i);
             }
             i++;
         }
 //        cout << "sum = "<< sum <<" count = "<<count<<endl;
-        cout << "mean comp time = "<<double(sum)/double(count)<<endl;
+//        cout << "mean comp time = "<<double(sum)/double(count)<<endl;
     };
 
     void fire_sequential(Node<T> *node, int i){
-        START(time);
+//        START(time);
         node->doTask(i);
 //        cout << elapsed<<endl;
         for (Node<T> *n: node->getDepNodeList()) {
             if (n->isReady()) {
-                count++;
+//                count++;
                 fire_sequential(n, i);
             }
         }
-        STOP(time, elapsed);
-        sum += elapsed;
+//        STOP(time, elapsed);
+//        sum += elapsed;
+    }
+
+    void startExecutor(){
+        tp->start();
     }
 
     void terminate() {

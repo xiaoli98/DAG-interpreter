@@ -29,14 +29,14 @@ private:
     ConcurrentQueue task_queue;
 
 //    atomic<int> n_done;
-    int n_done;
+//    int n_done;
 //    int n_added;
-    mutex mtx;
-    size_t sum;
+//    mutex mtx;
+//    size_t sum;
 
 public:
     Thread_pool(int nw) : n_worker(nw), terminate(false) {
-        sum = n_done = 0;
+//        sum = n_done = 0;
 //        n_done = n_added = 0;
     };
 
@@ -70,15 +70,15 @@ public:
 //                cout << elapsed << endl;
             }
             if (dequeued) {
-                START(time);
+//                START(time);
                 task();
-                STOP(time, elapsed_wait);
+//                STOP(time, elapsed_wait);
 //                cout << elapsed_wait << endl;
-                {
-                    unique_lock<mutex> lck(mtx);
-                    sum += elapsed_wait;
-                    n_done++;
-                }
+//                {
+//                    unique_lock<mutex> lck(mtx);
+//                    sum += elapsed_wait;
+//                    n_done++;
+//                }
             }
 //            STOP(time, elapsed);
 //            cout << elapsed<<endl;
@@ -99,7 +99,7 @@ public:
         for (auto &tid: tids)
             tid.join();
 //        cout << "sum = "<<sum<<" n_done = "<<n_done<<endl;
-        cout << "mean comp time = "<< double(sum) / double (n_done)<<endl;
+//        cout << "mean comp time = "<< double(sum) / double (n_done)<<endl;
     };
 //
 //    int getN_done(){

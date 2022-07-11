@@ -8,9 +8,13 @@
 #include <unistd.h>
 
 #define TIME 500
-#define CYCLE 100000
+#define CYCLE 10000
 #define N_INPUT 10000
+#define N_GRAPHS 8
 
+#define GRAPH 2
+
+#if (GRAPH == 1)
 int main(int argc, char *argv[]) {
     auto* a = new Node<float>(1, 1, 3, IN);
     auto* b = new Node<float>(2, 1, 1, MIDDLE);
@@ -225,18 +229,283 @@ int main(int argc, char *argv[]) {
 
     printf("speedup = %f\n",double(seq_elapsed)/double(g8_elapsed));
 
+
+    cout << "STARTING PARALLEL COMP 16 THREADS THREAD-POOL"<<endl;
+    Graph<float> g16(16);
+    g16.addNode(a);
+    g16.addNode(b);
+    g16.addNode(c);
+    g16.addNode(d);
+    g16.addNode(e);
+    START(startg16);
+    g16.compute(inputs);
+    g16.terminate();
+    STOP(startg16, g16_elapsed);
+    cout <<"total elapsed time:" <<g16_elapsed<<endl;
+
+    printf("speedup = %f\n",double(seq_elapsed)/double(g16_elapsed));
+
+    cout << "STARTING PARALLEL COMP 32 THREADS THREAD-POOL"<<endl;
+    Graph<float> g32(32);
+    g32.addNode(a);
+    g32.addNode(b);
+    g32.addNode(c);
+    g32.addNode(d);
+    g32.addNode(e);
+    START(startg32);
+    g32.compute(inputs);
+    g32.terminate();
+    STOP(startg32, g32_elapsed);
+    cout <<"total elapsed time:" <<g32_elapsed<<endl;
+
+    printf("speedup = %f\n",double(seq_elapsed)/double(g32_elapsed));
+
+    cout << "STARTING PARALLEL COMP 64 THREADS THREAD-POOL"<<endl;
+    Graph<float> g64(64);
+    g64.addNode(a);
+    g64.addNode(b);
+    g64.addNode(c);
+    g64.addNode(d);
+    g64.addNode(e);
+    START(startg64);
+    g64.compute(inputs);
+    g64.terminate();
+    STOP(startg64, g64_elapsed);
+    cout <<"total elapsed time:" <<g64_elapsed<<endl;
+
+    printf("speedup = %f\n",double(seq_elapsed)/double(g64_elapsed));
+
+    cout << "STARTING PARALLEL COMP 112 THREADS THREAD-POOL"<<endl;
+    Graph<float> g112(112);
+    g112.addNode(a);
+    g112.addNode(b);
+    g112.addNode(c);
+    g112.addNode(d);
+    g112.addNode(e);
+    START(startg112);
+    g112.compute(inputs);
+    g112.terminate();
+    STOP(startg112, g112_elapsed);
+    cout <<"total elapsed time:" <<g112_elapsed<<endl;
+
+    printf("speedup = %f\n",double(seq_elapsed)/double(g112_elapsed));
     return 0;
 }
+#endif
 
-//float main(float argc, char *argv[]) {
-//    vector<float> input;
-//    for(float i= 0; i< 10; i++){
-//        input.push_back(i);
-//    }
-//    input.push_back(NULL);
-//
-//    for(float i=0; i < input.size(); i++){
-//        if(input[i] == NULL) cout <<"null"<<endl;
-//        cout << input[i]<<endl;
-//    }
-//}
+#if (GRAPH == 2)
+int main(int argc, char *argv[]){
+    auto* a = new Node<float>(1, 1, 1, IN);
+    auto* b = new Node<float>(2, 1, 1, MIDDLE);
+    auto* c = new Node<float>(3, 1, 1, MIDDLE);
+    auto* d = new Node<float>(4, 1, 1, MIDDLE);
+    auto* e = new Node<float>(5, 1, 1, MIDDLE);
+    auto* f = new Node<float>(6, 1, 1, MIDDLE);
+    auto* g = new Node<float>(7, 1, 1, MIDDLE);
+    auto* h = new Node<float>(8, 1, 1, MIDDLE);
+    auto* i = new Node<float>(9, 1, 1, MIDDLE);
+    auto* l = new Node<float>(10, 1, 1, MIDDLE);
+    auto* m = new Node<float>(10, 1, 1, MIDDLE);
+    auto* n = new Node<float>(10, 1, 1, MIDDLE);
+    auto* o = new Node<float>(10, 1, 1, OUT);
+
+    a->addDep(b);
+    b->addDep(c);
+    c->addDep(d);
+    d->addDep(e);
+    e->addDep(f);
+    f->addDep(g);
+    g->addDep(h);
+    h->addDep(i);
+    i->addDep(l);
+    l->addDep(m);
+    m->addDep(n);
+    n->addDep(o);
+
+    a->addCompute([&a]() {
+        float in;
+        int id = a->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = sin(sin(sin(out1)));
+        }
+        a->send_out(out1, 0, id);
+    });
+    b->addCompute([&b]() {
+        float in;
+        int id = b->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = sin(log(cos(out1)));
+        }
+        b->send_out(out1, 0, id);
+    });
+    c->addCompute([&c]() {
+        float in;
+        int id = c->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = pow(sin(sin(out1)), 6);
+        }
+        c->send_out(out1, 0, id);
+    });
+    d->addCompute([&d]() {
+        float in;
+        int id = d->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = sin(sin(sin(out1)));
+        }
+        d->send_out(out1, 0, id);
+    });
+    e->addCompute([&e]() {
+        float in;
+        int id = e->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = cos(cos(cos(out1)));
+        }
+        e->send_out(out1, 0, id);
+    });
+    f->addCompute([&f]() {
+        float in;
+        int id = f->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = cos(sin(sin(out1)));
+        }
+        f->send_out(out1, 0, id);
+    });
+    g->addCompute([&g]() {
+        float in;
+        int id = g->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = log(log(log(out1)));
+        }
+        g->send_out(out1, 0, id);
+    });
+    h->addCompute([&h]() {
+        float in;
+        int id = h->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = asin(acos(tanh(out1)));
+        }
+        h->send_out(out1, 0, id);
+    });
+    i->addCompute([&i]() {
+        float in;
+        int id = i->binds_inputs({&in});
+        float out1 = in;
+        for(int z = 0; z< CYCLE; z++){
+            out1 = sin(sin(sin(out1)));
+        }
+        i->send_out(out1, 0, id);
+    });
+    l->addCompute([&l]() {
+        float in;
+        int id = l->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = log(cos(pow(out1, 4)));
+        }
+        l->send_out(out1, 0, id);
+    });
+    m->addCompute([&m]() {
+        float in;
+        int id = m->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = sin(sin(sin(out1)));
+        }
+        m->send_out(out1, 0, id);
+    });
+    n->addCompute([&n]() {
+        float in;
+        int id = n->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = tanh(sin(sin(out1)));
+        }
+        n->send_out(out1, 0, id);
+    });
+    o->addCompute([&o]() {
+        float in;
+        int id = o->binds_inputs({&in});
+        float out1 = in;
+        for(int i = 0; i< CYCLE; i++){
+            out1 = sin(sin(sin(out1)));
+        }
+        o->send_out(out1, 0, id);
+    });
+
+    vector<float> inputs;
+    for (int input = 1; input < N_INPUT; input++) {
+        inputs.push_back(float(input));
+    }
+
+    vector<Graph<float>*> my_graphs;
+    Graph<float> graph_seq;
+
+    graph_seq.addNode(a);
+    graph_seq.addNode(b);
+    graph_seq.addNode(c);
+    graph_seq.addNode(d);
+    graph_seq.addNode(e);
+    graph_seq.addNode(f);
+    graph_seq.addNode(g);
+    graph_seq.addNode(h);
+    graph_seq.addNode(i);
+    graph_seq.addNode(l);
+    graph_seq.addNode(m);
+    graph_seq.addNode(n);
+    graph_seq.addNode(o);
+    cout << "---------------SEQUENTIAL----------------------"<<endl;
+    START(start_seq);
+    graph_seq.compute_sequential(inputs);
+//    cout << "total task = "<<g.getCount()<<endl;
+    STOP(start_seq, seq_elapsed);
+    cout <<"total elapsed time:" <<seq_elapsed<<endl;
+
+    int numbers[6] = {1, 2, 4, 8, 16, 32};
+
+    for (int number : numbers){
+        my_graphs.push_back(new Graph<float>(number, false));
+    }
+
+    int z = 0;
+    for (auto graph : my_graphs){
+        graph->addNode(a);
+        graph->addNode(b);
+        graph->addNode(c);
+        graph->addNode(d);
+        graph->addNode(e);
+        graph->addNode(f);
+        graph->addNode(g);
+        graph->addNode(h);
+        graph->addNode(i);
+        graph->addNode(l);
+        graph->addNode(m);
+        graph->addNode(n);
+        graph->addNode(o);
+        cout << "-------------------------------------"<<endl;
+        cout << "N_Thread: "<< numbers[z++] <<endl;
+        graph->startExecutor();
+        START(start);
+        graph->compute(inputs);
+//    cout << "total task = "<<g.getCount()<<endl;
+        graph->terminate();
+        STOP(start, elapsed);
+        cout <<"total elapsed time:" <<elapsed<<endl;
+        printf("speedup = %f\n",double(seq_elapsed)/double(elapsed));
+    }
+}
+#endif
+
+#if (GRAPH == 3)
+#endif
+
+#if (GRAPH == 4)
+
+#endif
